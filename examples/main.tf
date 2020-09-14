@@ -3,35 +3,14 @@ provider "ksql" {
 }
 
 resource "ksql_table" "users" {
-  name = "users_original"
-
-  fields = {
-    registertime = "BIGINT"
-    gender       = "VARCHAR"
-    regionid     = "VARCHAR"
-    userid       = "VARCHAR"
-  }
-
-  settings = {
-    key          = "userid"
-    kafka_topic  = "users"
-    value_format = "JSON"
-  }
+  name  = "users_original"
+  query = "(registertime BIGINT, gender VARCHAR, regionid VARCHAR, userid VARCHAR) WITH (VALUE_FORMAT='JSON', KAFKA_TOPIC='users', KEY='userid')"
 }
 
 resource "ksql_stream" "pageviews" {
   name = "pageviews_original"
 
-  fields = {
-    viewtime = "BIGINT"
-    userid   = "varchar"
-    pageid   = "varchar"
-  }
-
-  settings = {
-    kafka_topic  = "pageviews"
-    value_format = "DELIMITED"
-  }
+  query = "(viewtime BIGINT, userid VARCHAR, pageid VARCHAR) WITH(KAFKA_TOPIC='pageviews', VALUE_FORMAT='DELIMITED')"
 }
 
 resource "ksql_table" "logins" {
