@@ -20,8 +20,10 @@ func Provider() terraform.ResourceProvider {
 
 		ConfigureFunc: providerConfigure,
 		ResourcesMap: map[string]*schema.Resource{
-			"ksql_table":  ksqlTableResource(),
-			"ksql_stream": ksqlStreamResource(),
+			"ksql_table":            ksqlTableResource(),
+			"ksql_stream":           ksqlStreamResource(),
+			"ksql_sink_connector":   ksqlSinkConnectorResource(),
+			"ksql_source_connector": ksqlSourceConnectorResource(),
 		},
 	}
 }

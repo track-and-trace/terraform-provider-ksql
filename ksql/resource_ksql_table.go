@@ -1,7 +1,6 @@
 package ksql
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/Mongey/ksql/ksql"
@@ -15,39 +14,35 @@ func ksqlTableResource() *schema.Resource {
 		Delete: tableDelete,
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "The name of the table",
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Description:   "The name of the table",
+				ConflictsWith: []string{"ksql"},
+				Computed:      true,
 			},
 			"query": {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "The query",
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Description:   "The query after CREATE TABLE [name]",
+				ConflictsWith: []string{"ksql"},
+				Computed:      true,
+			},
+			"ksql": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Description:   "The full query along with CREATE TABLE [name] infront",
+				ConflictsWith: []string{"name", "query"},
+				Computed:      true,
 			},
 		},
 	}
 }
 
 func tableCreate(d *schema.ResourceData, meta interface{}) error {
-	name := d.Get("name").(string)
-	query := d.Get("query").(string)
-	log.Printf("[WARN] Creating a table: %s with %s", name, query)
-	c := meta.(*ksql.Client)
-	q := fmt.Sprintf("CREATE TABLE %s %s", name, query)
-	log.Printf("[WARN] Query %s", q)
-
-	r := ksql.Request{
-		KSQL: q,
-	}
-	resp, err := c.Do(r)
-	log.Printf("[RESP] %v", resp)
-	if err != nil {
-		return err
-	}
-	d.SetId(name)
-	return nil
+	return createKSQLResource(d, meta, "TABLE")
 }
 
 func tableRead(d *schema.ResourceData, meta interface{}) error {

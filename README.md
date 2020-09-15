@@ -15,21 +15,23 @@ A [Terraform][1] plugin for managing [Confluent KSQL Server][2].
 ## Installation
 
 Download and extract the [latest
-release](https://github.com/Mongey/terraform-provider-ksql/releases/latest) to
+release](/latest) to
 your [terraform plugin directory][third-party-plugins] (typically `~/.terraform.d/plugins/`)
 
 ### Developing
 
 0. [Install go][install-go]
-0. Clone repository to: `$GOPATH/src/github.com/Mongey/terraform-provider-ksql`
-    ``` bash
-    mkdir -p $GOPATH/src/github.com/Mongey/terraform-provider-ksql; cd $GOPATH/src/github.com/Mongey/
-    git clone https://github.com/Mongey/terraform-provider-ksql.git
-    ```
+0. Clone repository
 0. Build the provider `make build`
 0. Run the tests `make test`
 
-0. Build the provider `make build`
+### Distribuition
+
+0. Adjust the [VERSION](VERSION)
+0. Run the build
+   ```
+   make -f Makefile all
+   ```
 
 ## Provider Configuration
 
@@ -42,6 +44,7 @@ provider "ksql" {
 ```
 
 ## Resources
+
 ### `ksql_stream`
 
 A resource for managing KSQL streams
@@ -53,6 +56,20 @@ resource "ksql_stream" "actions" {
               LEFT JOIN users u ON c.userid = u.user_id
               WHERE u.level =
               'Platinum';"
+}
+```
+
+the same with just ksql query string:
+
+```hcl
+resource "ksql_stream" "actions" {
+  ksql = <<EOF
+create stream vip_actions SELECT userid, page, action
+              FROM clickstream c
+              LEFT JOIN users u ON c.userid = u.user_id
+              WHERE u.level =
+              'Platinum';
+EOF
 }
 ```
 
@@ -72,6 +89,21 @@ resource "ksql_table" "users" {
 }
 ```
 
+the same with just ksql query string:
+
+```hcl
+resource "ksql_table" "users" {
+  ksql = <<EOF
+create table users-thing SELECT error_code,
+            count(*),
+            FROM monitoring_stream
+            WINDOW TUMBLING (SIZE 1 MINUTE)
+            WHERE  type = 'ERROR'
+            GROUP BY error_code;
+EOF
+  }
+}
+```
 
 [install-go]: https://golang.org/doc/install#install
 [1]: https://www.terraform.io
