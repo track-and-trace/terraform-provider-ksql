@@ -1,6 +1,7 @@
 package ksql
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/Mongey/ksql/ksql"
@@ -56,14 +57,17 @@ func tableRead(d *schema.ResourceData, meta interface{}) error {
 	for _, t := range tables {
 		//d.Set("query")
 		log.Printf("[INFO] Found %s: %v", t.Name, t)
+		if t.Name == name {
+			return nil
+		}
 	}
-	return nil
+	return fmt.Errorf("did not found table %s", name)
 }
 
 func tableDelete(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*ksql.Client)
 	name := d.Get("name").(string)
-	log.Printf("[INFO] Deleting table %s", name)
-	err := c.DropTable(&ksql.DropTableRequest{Name: name})
+	log.Printf("[INFO] Deleting stream %s", name)
+	_, err := c.Do(ksql.Request{KSQL: fmt.Sprintf("DROP TABLE %s;", name)})
 	return err
 }

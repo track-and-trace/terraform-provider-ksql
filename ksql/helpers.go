@@ -21,18 +21,27 @@ func createKSQLResource(d *schema.ResourceData, meta interface{}, resType string
 	}
 
 	if ksqlSpec {
+		nSplits := 4
+		if len(strings.Split(resType, " ")) > 1 {
+			nSplits = 5
+		}
+
 		// Parse the kSQL and set the name and query
 		queryFull = queryFullVal.(string)
-		splits := strings.SplitN(queryFull, " ", 4)
-		if len(splits) != 4 {
+		splits := strings.SplitN(queryFull, " ", nSplits)
+		if len(splits) != nSplits {
 			return fmt.Errorf("expected valid query but got %s", queryFull)
 		}
-		if strings.ToUpper(splits[1]) != resType {
+		ksqlType := splits[1]
+		if nSplits == 5 {
+			ksqlType = splits[1] + " " + splits[2]
+		}
+		if strings.ToUpper(ksqlType) != resType {
 			return fmt.Errorf("not a %s create statement %s", resType, queryFull)
 		}
-		name = splits[2]
+		name = splits[nSplits-2]
 		d.Set("name", name)
-		query = splits[3]
+		query = splits[nSplits-1]
 		d.Set("query", query)
 
 	}
@@ -44,17 +53,18 @@ func createKSQLResource(d *schema.ResourceData, meta interface{}, resType string
 		d.Set("ksql", queryFull)
 	}
 
-	log.Printf("[WARN] Creating a %s: %s with %s", resType, name, query)
+	log.Printf("[DEBUG] Creating a %s: %s with %s", resType, name, query)
 	c := meta.(*ksql.Client)
-	log.Printf("[WARN] Query %s", queryFull)
+	log.Printf("[DEBUG] Query %s", queryFull)
 
 	r := ksql.Request{
 		KSQL: queryFull,
 	}
 
 	resp, err := c.Do(r)
-	log.Printf("[RESP] %v", resp)
+	log.Printf("[DEBUG] %v", resp)
 	if err != nil {
+		log.Printf("[ERROR] filed to execute query : %s : %v", queryFull, err)
 		return err
 	}
 	d.SetId(name)

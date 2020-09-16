@@ -15,64 +15,59 @@ func ksqlSinkConnectorResource() *schema.Resource {
 		Delete: sinkConnectorDelete,
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "The name of the sink connector",
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Description:   "The name of the sinkConnector",
+				ConflictsWith: []string{"ksql"},
+				Computed:      true,
 			},
 			"query": {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "The query",
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Description:   "The query after CREATE SINK CONNECTOR[name]",
+				ConflictsWith: []string{"ksql"},
+				Computed:      true,
+			},
+			"ksql": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Description:   "The full query along with CREATE SINK CONNECTOR [name] infront",
+				ConflictsWith: []string{"name", "query"},
+				Computed:      true,
 			},
 		},
 	}
 }
 
 func sinkConnectorCreate(d *schema.ResourceData, meta interface{}) error {
-	name := d.Get("name").(string)
-	query := d.Get("query").(string)
-	log.Printf("[WARN] Creating a sinkConnector: %s with %s", name, query)
-	c := meta.(*ksql.Client)
-	q := fmt.Sprintf("CREATE SINK CONNECTOR %s %s", name, query)
-	log.Printf("[WARN] Query %s", q)
-
-	r := ksql.Request{
-		KSQL: q,
-	}
-	resp, err := c.Do(r)
-	log.Printf("[RESP] %v", resp)
-	if err != nil {
-		return err
-	}
-	d.SetId(name)
-	return nil
+	return createKSQLResource(d, meta, "SINK CONNECTOR")
 }
 
 func sinkConnectorRead(d *schema.ResourceData, meta interface{}) error {
-	return fmt.Errorf("Sink connector read is not implemented yet.")
-	// TODO: Read the connectors
-	//c := meta.(*ksql.Client)
-	//name := d.Get("name").(string)
-	//log.Printf("[ERROR] Searching for sinkConnector %s", name)
-	// sinkConnectors, err := c.ListTables()
-	// if err != nil {
-	// 	return err
-	// }
-	// for _, t := range sinkConnectors {
-	// 	//d.Set("query")
-	// 	log.Printf("[INFO] Found %s: %v", t.Name, t)
-	// }
-	// return nil
+	c := meta.(*ksql.Client)
+	name := d.Get("name").(string)
+	log.Printf("[TRACE] Searching for sinkConnector %s", name)
+	sinkConnectors, err := c.ListConnectors()
+	if err != nil {
+		return err
+	}
+	for _, s := range sinkConnectors {
+		//d.Set("query")
+		log.Printf("[TRACE] Found %s: %v", s.Name, s)
+		if s.Name == name && s.Type == "sink" {
+			return nil
+		}
+	}
+	return fmt.Errorf("sink connector %s was not found", name)
 }
 
 func sinkConnectorDelete(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*ksql.Client)
 	name := d.Get("name").(string)
 	log.Printf("[INFO] Deleting sinkConnector %s", name)
-	// TODO: Implement drop of sink connector in ksql package
-	// err := c.DropTable(&ksql.DropTableRequest{Name: name})
-	_, err := c.Do(ksql.Request{KSQL: fmt.Sprintf("DROP CONNECTOR %s", name)})
+	_, err := c.Do(ksql.Request{KSQL: fmt.Sprintf("DROP CONNECTOR %s;", name)})
 	return err
 }
