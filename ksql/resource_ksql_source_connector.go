@@ -15,64 +15,59 @@ func ksqlSourceConnectorResource() *schema.Resource {
 		Delete: sourceConnectorDelete,
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "The name of the source connector",
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Description:   "The name of the sourceConnector",
+				ConflictsWith: []string{"ksql"},
+				Computed:      true,
 			},
 			"query": {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "The query",
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Description:   "The query after CREATE SOURCE CONNECTOR[name]",
+				ConflictsWith: []string{"ksql"},
+				Computed:      true,
+			},
+			"ksql": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Description:   "The full query along with CREATE SOURCE CONNECTOR [name] infront",
+				ConflictsWith: []string{"name", "query"},
+				Computed:      true,
 			},
 		},
 	}
 }
 
 func sourceConnectorCreate(d *schema.ResourceData, meta interface{}) error {
-	name := d.Get("name").(string)
-	query := d.Get("query").(string)
-	log.Printf("[WARN] Creating a sourceConnector: %s with %s", name, query)
-	c := meta.(*ksql.Client)
-	q := fmt.Sprintf("CREATE SOURCE CONNECTOR %s %s", name, query)
-	log.Printf("[WARN] Query %s", q)
-
-	r := ksql.Request{
-		KSQL: q,
-	}
-	resp, err := c.Do(r)
-	log.Printf("[RESP] %v", resp)
-	if err != nil {
-		return err
-	}
-	d.SetId(name)
-	return nil
+	return createKSQLResource(d, meta, "SOURCE CONNECTOR")
 }
 
 func sourceConnectorRead(d *schema.ResourceData, meta interface{}) error {
-	return fmt.Errorf("Source connector read is not implemented yet.")
-	// TODO: Read the connectors
-	//c := meta.(*ksql.Client)
-	//name := d.Get("name").(string)
-	//log.Printf("[ERROR] Searching for sourceConnector %s", name)
-	// sourceConnectors, err := c.ListTables()
-	// if err != nil {
-	// 	return err
-	// }
-	// for _, t := range sourceConnectors {
-	// 	//d.Set("query")
-	// 	log.Printf("[INFO] Found %s: %v", t.Name, t)
-	// }
-	// return nil
+	c := meta.(*ksql.Client)
+	name := d.Get("name").(string)
+	log.Printf("[TRACE] Searching for sourceConnector %s", name)
+	sourceConnectors, err := c.ListConnectors()
+	if err != nil {
+		return err
+	}
+	for _, s := range sourceConnectors {
+		//d.Set("query")
+		log.Printf("[TRACE] Found %s: %v", s.Name, s)
+		if s.Name == name && s.Type == "source" {
+			return nil
+		}
+	}
+	return fmt.Errorf("source connector %s was not found", name)
 }
 
 func sourceConnectorDelete(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*ksql.Client)
 	name := d.Get("name").(string)
 	log.Printf("[INFO] Deleting sourceConnector %s", name)
-	// TODO: Implement drop of source connector in ksql package
-	// err := c.DropTable(&ksql.DropTableRequest{Name: name})
-	_, err := c.Do(ksql.Request{KSQL: fmt.Sprintf("DROP CONNECTOR %s", name)})
+	_, err := c.Do(ksql.Request{KSQL: fmt.Sprintf("DROP CONNECTOR %s;", name)})
 	return err
 }

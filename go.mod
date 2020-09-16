@@ -1,6 +1,6 @@
 module github.com/Mongey/terraform-provider-ksql
 
-go 1.12
+go 1.14
 
 require (
 	github.com/Mongey/ksql v0.0.0-20190529181749-2c1a4ea00a44
@@ -8,3 +8,5 @@ require (
 	github.com/hashicorp/go-hclog v0.0.0-20190109152822-4783caec6f2e // indirect
 	github.com/hashicorp/terraform v0.12.0
 )
+
+replace github.com/Mongey/ksql => github.com/track-and-trace/ksql v0.1.1
