@@ -22,7 +22,7 @@ func createKSQLResource(d *schema.ResourceData, meta interface{}, resType string
 
 	if ksqlSpec {
 		// Parse the kSQL and set the name and query
-		queryFull := queryFullVal.(string)
+		queryFull = queryFullVal.(string)
 		splits := strings.SplitN(queryFull, " ", 4)
 		if len(splits) != 4 {
 			return fmt.Errorf("expected valid query but got %s", queryFull)
