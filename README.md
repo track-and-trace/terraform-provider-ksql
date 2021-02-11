@@ -5,12 +5,18 @@ A [Terraform][1] plugin for managing [Confluent KSQL Server][2].
 
 ## Contents
 
-* [Installation](#installation)
-  * [Developing](#developing)
-* [`ksql` Provider](#provider-configuration)
-* [Resources](#resources)
-  * [`ksql_stream`](#ksql_stream)
-  * [`ksql_table`](#ksql_table)
+- [`terraform-provider-ksql`](#terraform-provider-ksql)
+  - [Contents](#contents)
+  - [Installation](#installation)
+    - [Developing](#developing)
+    - [Distribuition](#distribuition)
+  - [Provider Configuration](#provider-configuration)
+    - [Example](#example)
+  - [Resources](#resources)
+    - [`ksql_stream`](#ksql_stream)
+    - [`ksql_table`](#ksql_table)
+    - [`ksql_source_connector`](#ksql_source_connector)
+    - [`ksql_sink_connector`](#ksql_sink_connector)
 
 ## Installation
 
@@ -100,6 +106,49 @@ create table users-thing SELECT error_code,
             WINDOW TUMBLING (SIZE 1 MINUTE)
             WHERE  type = 'ERROR'
             GROUP BY error_code;
+EOF
+  }
+}
+```
+
+### `ksql_source_connector`
+
+```hcl
+resource "ksql_source_connector" "jdbcconnector" {
+  ksql = <<EOF
+CREATE SOURCE CONNECTOR `jdbc-connector` WITH(
+    "connector.class"='io.confluent.connect.jdbc.JdbcSourceConnector',
+    "connection.url"='jdbc:postgresql://localhost:5432/my.db',
+    "mode"='bulk',
+    "topic.prefix"='jdbc-',
+    "table.whitelist"='users',
+    "key"='username');
+EOF
+  }
+}
+```
+
+### `ksql_sink_connector`
+
+```hcl
+resource "ksql_sink_connector" "docs" {
+  ksql = <<EOF
+CREATE SINK CONNECTOR DOCS WITH (
+   'connector.class'          = 'io.confluent.connect.jdbc.JdbcSinkConnector',
+   'connection.url'           = 'jdbc:postgresql://localhost:5432/my_db',
+   'connection.user'          = 'pguser',
+   'connection.password'      = 'pgpass',
+   'tasks.max'                = '1',
+   'topics'                   = 'docs_avro',
+   'batch.size'               = '3',
+   'table.name.format'        = 'docs',
+   'auto.create'              = 'true',
+   'auto.evolve'              = 'true',
+   'delete.enabled'           = 'false',
+   'pk.mode'                  = 'record_key',
+   'pk.fields'                = 'docId',
+   'insert.mode'              = 'UPSERT'
+);
 EOF
   }
 }

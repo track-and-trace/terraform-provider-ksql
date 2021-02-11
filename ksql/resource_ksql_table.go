@@ -68,6 +68,5 @@ func tableDelete(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*ksql.Client)
 	name := d.Get("name").(string)
 	log.Printf("[INFO] Deleting stream %s", name)
-	_, err := c.Do(ksql.Request{KSQL: fmt.Sprintf("DROP TABLE %s;", name)})
-	return err
+	return dropObjectWithTerminateDeps(c, fmt.Sprintf("TABLE %s", name))
 }
